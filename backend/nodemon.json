@@ -1,0 +1,7 @@
+{
+  "watch": ["src"],
+  "ext": "ts,js,json",
+  "delay": "200",
+  "ignore": ["dist", "node_modules"],
+  "exec": "bun src/server.js"
+}
