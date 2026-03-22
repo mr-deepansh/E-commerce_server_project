@@ -4,7 +4,7 @@ class ApiError extends Error {
     message = "Internal Server Error",
     code = "INTERNAL_ERROR",
     details = null,
-    isOperational = true
+    isOperational = true,
   }) {
     super(message);
     this.name = "ApiError";
@@ -36,12 +36,16 @@ class ApiError extends Error {
     return new ApiError({ statusCode: 404, message, code: "NOT_FOUND" });
   }
 
+  static validationError(message = "Validation Error", details = null) {
+    return new ApiError({ statusCode: 422, message, code: "VALIDATION_ERROR", details });
+  }
+
   static internal(message = "Internal Server Error") {
     return new ApiError({
       statusCode: 500,
       message,
       code: "INTERNAL_ERROR",
-      isOperational: false
+      isOperational: false,
     });
   }
 }

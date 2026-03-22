@@ -7,18 +7,18 @@ export const errorHandler = (err, req, res, next) => {
     code: err.code,
     stack: err.stack,
     url: req.originalUrl,
-    method: req.method
+    method: req.method,
   });
   if (err instanceof ApiError) {
     return res.status(err.statusCode).json({
       success: false,
       message: err.message,
       code: err.code,
-      details: err.details
+      details: err.details,
     });
   }
   return res.status(500).json({
     success: false,
-    message: "Internal Server Error"
+    message: "Internal Server Error",
   });
 };

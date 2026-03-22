@@ -1,6 +1,7 @@
-import winston from "winston";
 import fs from "fs";
 import path from "path";
+
+import winston from "winston";
 
 const { combine, timestamp, printf, errors, json, colorize } = winston.format;
 
@@ -13,9 +14,7 @@ if (!fs.existsSync(LOG_DIR)) {
 const SERVICE_NAME = "api-service";
 const ENV = process.env.NODE_ENV;
 const devFormat = printf(({ level, message, timestamp, stack }) => {
-  return `${timestamp} [${level.toUpperCase()}] [${SERVICE_NAME}] (${ENV}) ${
-    stack || message
-  }`;
+  return `${timestamp} [${level.toUpperCase()}] [${SERVICE_NAME}] (${ENV}) ${stack || message}`;
 });
 
 const prodFormat = json();
@@ -30,19 +29,17 @@ export const logger = winston.createLogger({
   transports: [
     // console
     new winston.transports.Console({
-      format: ENV === "production"
-        ? combine(timestamp(), json())
-        : combine(colorize(), devFormat)
+      format: ENV === "production" ? combine(timestamp(), json()) : combine(colorize(), devFormat),
     }),
     // error logs
     new winston.transports.File({
       filename: path.join(LOG_DIR, "error.log"),
-      level: "error"
+      level: "error",
     }),
     // all logs
     new winston.transports.File({
-      filename: path.join(LOG_DIR, "combined.log")
-    })
+      filename: path.join(LOG_DIR, "combined.log"),
+    }),
   ],
-  exitOnError: false
+  exitOnError: false,
 });

@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
-import { env } from "./env.js";
+
 import { logger } from "../utils/logger.js";
+
+import { env } from "./env.js";
 
 export const connectDB = async () => {
   try {
@@ -11,11 +13,11 @@ export const connectDB = async () => {
     const conn = await mongoose.connect(import.meta.env.MONGODB_URI, {
       retryWrites: true,
       w: "majority",
-      serverSelectionTimeoutMS: 5000
+      serverSelectionTimeoutMS: 5000,
     });
     logger.info(`✅ MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     logger.error(`❌ MongoDB connection failed: ${error.message}`);
-    throw error; 
+    throw error;
   }
 };
