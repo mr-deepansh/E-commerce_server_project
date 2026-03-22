@@ -1,8 +1,7 @@
 import morgan from "morgan";
-
 import { logger } from "./logger.js";
 
-const ENV = import.meta.env.NODE_ENV;
+const ENV = process.env.NODE_ENV;
 
 // stream → winston
 const stream = {

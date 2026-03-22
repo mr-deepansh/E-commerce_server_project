@@ -28,8 +28,8 @@ class ApiError extends Error {
     return new ApiError({ statusCode: 403, message, code: "FORBIDDEN" });
   }
 
-  static conflict(message = "Conflict") {
-    return new ApiError({ statusCode: 409, message, code: "CONFLICT" });
+  static conflict(message = "Conflict", details = null) {
+    return new ApiError({ statusCode: 409, message, code: "CONFLICT", details });
   }
 
   static notFound(message = "Not Found") {
