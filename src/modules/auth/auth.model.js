@@ -1,5 +1,6 @@
 // backend/src/modules/auth/auth.model.js
 import mongoose from "mongoose";
+import bcrypt from "bcrypt";
 
 const userSchema = new mongoose.Schema(
   {
@@ -79,10 +80,19 @@ const userSchema = new mongoose.Schema(
     passwordChangedAt: {
       type: Date,
     },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
     timestamps: true,
   }
 );
+
+userSchema.index({ email: 1, username: 1 });
+userSchema.methods.isPasswordCorrect = async function (candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
 
 export const User = mongoose.model("User", userSchema);

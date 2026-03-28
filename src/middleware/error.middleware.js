@@ -67,6 +67,7 @@ export const errorHandler = (err, req, res, next) => {
     });
   }
   if (err.code === 11000) {
+    const keyObj = err.keyValue || {};
     const fields = Object.keys(keyObj);
     const details = fields.map((field) => ({
       field,

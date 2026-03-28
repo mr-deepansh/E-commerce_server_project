@@ -9,11 +9,29 @@ const EMAIL_RULES = Object.freeze({
   DOMAIN_MAX: 255,
 });
 
+const NAME_RULES = Object.freeze({
+  FIRST_MIN: 2,
+  FIRST_MAX: 50,
+  LAST_MIN: 2,
+  LAST_MAX: 50,
+});
+
+const USERNAME_RULES = Object.freeze({
+  MIN: 3,
+  MAX: 20,
+});
+
+const PASSWORD_RULES = Object.freeze({
+  MIN: 8,
+  MAX: 128,
+});
+
 const REGEX = Object.freeze({
   LOCAL_CHARS: /^[a-zA-Z0-9!#$%&'*+\/=?^_`{|}~.\-]+$/,
   DOMAIN_LABEL: /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/,
   TLD: /^[a-zA-Z]{2,24}$/,
   NAME: /^[\p{L}\p{M}'\-\s]+$/u,
+  OPTIONAL_NAME: /^[\p{L}\p{M}'\-\s]*$/u,
   USERNAME: /^[a-z0-9._-]+$/,
   PASSWORD_STRENGTH:
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).+$/,
@@ -29,6 +47,30 @@ const BLOCKED_DOMAINS = new Set([
   "trashmail.com",
   "10minutemail.com",
   "fakeinbox.com",
+  "tempinbox.com",
+  "dispostable.com",
+  "mailnull.com",
+  "spamgourmet.com",
+  "trashmail.at",
+  "trashmail.io",
+  "trashmail.me",
+  "discard.email",
+  "spam4.me",
+  "getairmail.com",
+  "filzmail.com",
+  "maildrop.cc",
+  "spambox.us",
+  "tempr.email",
+  "getnada.com",
+  "anonaddy.com",
+  "spamherelots.com",
+  "mailnesia.com",
+  "throwam.com",
+  "temp-mail.org",
+  "emailondeck.com",
+  "tempail.com",
+  "tmpeml.com",
+  "inboxkitten.com",
 ]);
 
 const isValidLocalPart = (local) => {
@@ -37,7 +79,6 @@ const isValidLocalPart = (local) => {
   if (local.includes("..")) return false;
   return REGEX.LOCAL_CHARS.test(local);
 };
-
 const isValidDomain = (domain) => {
   if (!domain || domain.length > EMAIL_RULES.DOMAIN_MAX) return false;
   const labels = domain.split(".");
@@ -49,9 +90,7 @@ const isValidDomain = (domain) => {
       label.length >= 1 && label.length <= EMAIL_RULES.LABEL_MAX && REGEX.DOMAIN_LABEL.test(label)
   );
 };
-
 const isNotDisposable = (domain) => !BLOCKED_DOMAINS.has(domain.toLowerCase());
-
 export const emailSchema = z
   .string({ required_error: "Email is required" })
   .trim()
@@ -71,10 +110,7 @@ export const emailSchema = z
       });
     }
     if (!isValidDomain(domain)) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Email domain is invalid",
-      });
+      ctx.addIssue({ code: "custom", message: "Email domain is invalid" });
     }
     if (!isNotDisposable(domain)) {
       ctx.addIssue({
@@ -83,43 +119,39 @@ export const emailSchema = z
       });
     }
   });
-
 export const usernameSchema = z
   .string({ required_error: "Username is required" })
   .trim()
   .toLowerCase()
-  .min(5, "Username must be at least 5 characters")
-  .max(20, "Username must be at most 20 characters")
+  .min(USERNAME_RULES.MIN, `Username must be at least ${USERNAME_RULES.MIN} characters`)
+  .max(USERNAME_RULES.MAX, `Username must be at most ${USERNAME_RULES.MAX} characters`)
   .regex(
     REGEX.USERNAME,
     "Username may only contain lowercase letters, numbers, dots, underscores, or hyphens"
   )
-  .refine((u) => !u.startsWith(".") && !u.endsWith("."), {
-    message: "Username cannot start or end with a dot",
+  .refine((u) => !u.startsWith(".") && !u.endsWith(".") && !u.startsWith("-") && !u.endsWith("-"), {
+    message: "Username cannot start or end with a dot or hyphen", // ✅ added hyphen check
   })
-  .refine((u) => !u.includes(".."), {
-    message: "Username cannot contain consecutive dots",
+  .refine((u) => !u.includes("..") && !u.includes("--"), {
+    message: "Username cannot contain consecutive dots or hyphens", // ✅ added -- check
   });
-
 export const firstNameSchema = z
   .string({ required_error: "First name is required" })
   .trim()
-  .min(5, "First name must be at least 5 characters")
-  .max(50, "First name must be at most 50 characters")
+  .min(NAME_RULES.FIRST_MIN, `First name must be at least ${NAME_RULES.FIRST_MIN} characters`)
+  .max(NAME_RULES.FIRST_MAX, `First name must be at most ${NAME_RULES.FIRST_MAX} characters`)
   .regex(REGEX.NAME, "First name contains invalid characters");
-
 export const lastNameSchema = z
   .string()
   .trim()
-  .min(2, "Last name must be at least 2 characters")
-  .max(50, "Last name must be at most 50 characters")
-  .regex(/^[\p{L}\p{M}'\-\s]*$/u, "Last name contains invalid characters")
+  .min(NAME_RULES.LAST_MIN, `Last name must be at least ${NAME_RULES.LAST_MIN} characters`)
+  .max(NAME_RULES.LAST_MAX, `Last name must be at most ${NAME_RULES.LAST_MAX} characters`)
+  .regex(REGEX.NAME, "Last name contains invalid characters")
   .optional();
-
 export const passwordSchema = z
   .string({ required_error: "Password is required" })
-  .min(8, "Password must be at least 8 characters")
-  .max(128, "Password must be at most 128 characters")
+  .min(PASSWORD_RULES.MIN, `Password must be at least ${PASSWORD_RULES.MIN} characters`)
+  .max(PASSWORD_RULES.MAX, `Password must be at most ${PASSWORD_RULES.MAX} characters`)
   .regex(
     REGEX.PASSWORD_STRENGTH,
     "Password must include uppercase, lowercase, number, and special character"
@@ -127,7 +159,26 @@ export const passwordSchema = z
   .refine((pwd) => !/\s/.test(pwd), {
     message: "Password must not contain spaces",
   });
+export const confirmPasswordSchema = z
+  .string({ required_error: "Please confirm your password" })
+  .min(PASSWORD_RULES.MIN, "Confirmation password is too short")
+  .max(PASSWORD_RULES.MAX, "Confirmation password is too long");
 
-export const confirmPasswordSchema = z.string({
-  required_error: "Please confirm your password",
-});
+// Environment variable schemas
+const isProd = process.env.NODE_ENV === "production";
+
+export const portSchema = z.coerce.number().min(1024).max(65535);
+export const nodeEnvSchema = z.enum(["development", "production", "test"]);
+export const apiVersionSchema = z.string().regex(/^v\d+$/, "Must be like v1, v2");
+export const urlSchema = z.string().url();
+export const positiveNumberSchema = z.coerce.number().min(1);
+export const nonNegativeNumberSchema = z.coerce.number().min(0);
+export const durationSchema = z.string().regex(/^\d+[smhd]$/, "Must be like 15m, 1h, 7d");
+export const secretSchema = (minDev, minProd) =>
+  isProd
+    ? z.string().min(minProd, `Must be at least ${minProd} chars in production`)
+    : z.string().min(minDev, `Must be at least ${minDev} chars`);
+export const smtpStringSchema = isProd ? z.string().min(1) : z.string().min(1).optional();
+export const logLevelSchema = z.enum(["error", "warn", "info", "http", "debug"]);
+export const logFormatSchema = z.enum(["dev", "combined", "json"]);
+export const cookieSameSiteSchema = z.enum(["strict", "lax", "none"]);

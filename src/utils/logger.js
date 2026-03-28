@@ -18,7 +18,7 @@ const devFormat = combine(
   timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
   errors({ stack: true }),
   printf(({ level, message, timestamp: ts, stack, ...meta }) => {
-    const { service, env, ...restMeta } = meta; // 🔥 IMPORTANT
+    const { service, env, ...restMeta } = meta;
     const metaStr = Object.keys(restMeta).length ? ` ${JSON.stringify(restMeta)}` : "";
     return `[${ts}] ${level} [${SERVICE}] (${ENV}) ${stack ?? message}${metaStr}`;
   })
