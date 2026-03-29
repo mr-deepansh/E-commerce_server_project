@@ -13,6 +13,9 @@ export const register = async (req, res, next) => {
 export const login = async (req, res, next) => {
   try {
     const { identifier, password } = req.body;
+    if (!identifier || !password) {
+      throw ApiError.badRequest("Missing identifier or password");
+    }
     const result = await authService.login(identifier, password);
     res.json(apiResponse.success(result, "Login successful"));
   } catch (error) {

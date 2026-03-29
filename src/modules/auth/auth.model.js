@@ -52,33 +52,19 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    verificationToken: {
-      type: String,
-      default: null,
-    },
-    refreshToken: {
-      type: String,
-      default: null,
-    },
-    passwordResetToken: {
-      type: String,
-      default: null,
-    },
-    resetPaswordExpires: {
-      type: Date,
-      default: null,
-    },
+    verificationToken: String,
+    passwordResetToken: String,
+    resetPasswordExpires: Date,
+    passwordChangedAt: Date,
+    lockUntil: Date,
     loginAttempts: {
       type: Number,
       default: 0,
       min: 0,
     },
-    lockUntil: {
-      type: Date,
+    refreshToken: {
+      type: String,
       default: null,
-    },
-    passwordChangedAt: {
-      type: Date,
     },
     isActive: {
       type: Boolean,
@@ -91,8 +77,19 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.index({ email: 1, username: 1 });
-userSchema.methods.isPasswordCorrect = async function (candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+// Hash password (MODEL LEVEL SECURITY)
+userSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
+  this.password = await bcrypt.hash(this.password, 12);
+  this.passwordChangedAt = Date.now();
+});
+// Compare password
+userSchema.methods.isPasswordCorrect = function (password) {
+  return bcrypt.compare(password, this.password);
+};
+// Account lock
+userSchema.methods.isLocked = function () {
+  return this.lockUntil && this.lockUntil > Date.now();
 };
 
 export const User = mongoose.model("User", userSchema);

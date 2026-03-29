@@ -1,4 +1,3 @@
-import bcrypt from "bcrypt";
 import { User } from "./auth.model.js";
 import ApiError from "../../utils/apiError.js";
 import { generateResetToken, signAccessToken, signRefreshToken } from "../../utils/jwt.utils.js";
@@ -8,27 +7,28 @@ export const register = async (data) => {
   if (!data) {
     throw ApiError.badRequest("Missing registration data");
   }
-  const { firstName, lastName, email, username, password } = data;
+  const { firstName, lastName, email, username, password, confirmPassword } = data;
+  if (password !== confirmPassword) {
+    throw ApiError.badRequest("Passwords do not match");
+  }
   const existingUser = await User.findOne({ $or: [{ email }, { username }] });
   if (existingUser) {
     throw ApiError.conflict("User already exists");
   }
-  const saltRounds = env.BCRYPT_SALT_ROUNDS;
-  const hashedPassword = await bcrypt.hash(password, saltRounds);
   const { rawToken, hashedToken } = generateResetToken();
   const user = await User.create({
     firstName,
     lastName,
     username,
     email,
-    password: hashedPassword,
+    password,
+    isEmailVerified: false,
     verificationToken: hashedToken,
   });
   // TODO: send verification email with rawToken
-
-  const userObject = user.toObject();
-  delete userObject.password;
-  return userObject;
+  const obj = user.toObject();
+  delete obj.password;
+  return obj;
 };
 
 export const login = async (identifier, password) => {
@@ -38,22 +38,25 @@ export const login = async (identifier, password) => {
   if (!user) {
     throw ApiError.unauthorized("Invalid credentials");
   }
-  const isMatch = await bcrypt.compare(password, user.password);
+  if (user.isLocked()) {
+    throw ApiError.forbidden("Account temporarily locked");
+  }
+  const isMatch = await user.isPasswordCorrect(password);
   if (!isMatch) {
+    user.loginAttempts += 1;
+    if (user.loginAttempts >= env.MAX_LOGIN_ATTEMPTS) {
+      user.lockUntil = Date.now() + 15 * 60 * 1000;
+    }
+    await user.save();
     throw ApiError.unauthorized("Invalid credentials");
   }
-  const payload = {
-    _id: user._id,
-    username: user.username,
-    email: user.email,
-    role: user.role,
-  };
-  const accessToken = signAccessToken(payload);
-  const refreshToken = signRefreshToken(payload);
-  user.refreshToken = refreshToken;
+  // # Reset login attempts on successful login
+  user.loginAttempts = 0;
+  user.lockUntil = null;
   await user.save();
-  const userObject = user.toObject();
-  delete userObject.password;
-  delete userObject.refreshToken;
-  return { accessToken, refreshToken, user: userObject };
+  const accessToken = signAccessToken(user);
+  const refreshToken = signRefreshToken(user);
+  const obj = user.toObject();
+  delete obj.password;
+  return { accessToken, refreshToken, user: obj };
 };

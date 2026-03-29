@@ -13,7 +13,19 @@ class ApiError extends Error {
     this.details = details;
     this.success = false;
     this.isOperational = isOperational;
+    this.timestamp = new Date().toISOString();
     Error.captureStackTrace(this, this.constructor);
+  }
+  toJSON() {
+    return {
+      success: this.success,
+      error: {
+        code: this.code,
+        message: this.message,
+        details: this.details,
+        timestamp: this.timestamp,
+      },
+    };
   }
 
   static badRequest(message = "Bad Request", details = null) {
