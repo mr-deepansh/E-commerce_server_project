@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import winston from "winston";
+import { randomUUID } from "crypto";
 
 const { combine, timestamp, printf, errors, json, colorize } = winston.format;
 const ENV = process.env.NODE_ENV ?? "development";

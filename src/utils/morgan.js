@@ -2,6 +2,7 @@ import morgan from "morgan";
 import { logger } from "./logger.js";
 
 const ENV = process.env.NODE_ENV;
+const IS_DEV = ENV !== "production";
 
 const stream = {
   write: (message) => {
@@ -19,7 +20,17 @@ const stream = {
   },
 };
 
-morgan.token("request-id", (req) => req.headers["x-request-id"] ?? "-");
+morgan.token("request-id", (req) => req.requestId ?? "-");
+morgan.token("body", (req) => {
+  if (IS_DEV && req.body && Object.keys(req.body).length > 0) {
+    const sanitized = { ...req.body };
+    if (sanitized.password) sanitized.password = "***";
+    if (sanitized.confirmPassword) sanitized.confirmPassword = "***";
+    if (sanitized.refreshToken) sanitized.refreshToken = "***";
+    return JSON.stringify(sanitized);
+  }
+  return "-";
+});
 
 const FORMAT = JSON.stringify({
   method: ":method",
@@ -30,7 +41,9 @@ const FORMAT = JSON.stringify({
   ip: ":remote-addr",
   userAgent: ":user-agent",
   requestId: ":request-id",
+  body: ":body",
 });
+
 const HEALTHCHECK_PATHS = new Set(["/", "/health", "/api/health"]);
 const skip = (req) => HEALTHCHECK_PATHS.has(req.url);
 
